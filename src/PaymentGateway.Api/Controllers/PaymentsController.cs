@@ -36,7 +36,12 @@ public class PaymentsController : Controller
     [HttpPost]
     public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
     {
+        // validate
+        // call bank
+        // validate bank response
+        // add to payments repo
 
         return new OkObjectResult(PaymentStatus.Authorized);
     }
 }
+
