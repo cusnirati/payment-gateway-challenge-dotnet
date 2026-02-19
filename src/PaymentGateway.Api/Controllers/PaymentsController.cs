@@ -55,11 +55,11 @@ public class PaymentsController : Controller
     public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
     {
         bool isValid =
-            validator.IsCardNumberValid(payment) &&
-            validator.IsExpiryValid(payment) &&
-            validator.IsAmountValid(payment) &&
-            validator.IsCurrencyCodeValid(payment) &&
-            validator.ValidateCvv(payment);
+            this.validator.IsCardNumberValid(payment) &&
+            this.validator.IsExpiryValid(payment) &&
+            this.validator.IsAmountValid(payment) &&
+            this.validator.IsCurrencyCodeValid(payment) &&
+            this.validator.ValidateCvv(payment);
 
         if (!isValid)
         {
