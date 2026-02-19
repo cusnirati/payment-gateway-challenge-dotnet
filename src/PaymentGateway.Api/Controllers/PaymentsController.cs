@@ -28,100 +28,116 @@ public class PaymentsController : Controller
         this.paymentRepo = paymentRepo;
     }
 
-    // [HttpGet("{id:guid}")]
-    // public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
-    // {
-    //     var payment = paymentsRepo.Get(id);
-
-    //     return new OkObjectResult(payment);
-    // }
-
-    [HttpGet("")]
+    // curl -k https://localhost:7092/api/payments
+    // health check endpoint
+    [HttpGet()]
     public async Task<ActionResult<string>> Get()
     {
-        return new OkObjectResult("okkkkkkkkk");
+        return new OkObjectResult("ok");
     }
 
-    [HttpPost("")]
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
+    {
+        var payment = this.paymentRepo.Get(id);
+
+        return new OkObjectResult(payment);
+    }
+
+    [HttpPost()]
     public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
     {
-        // add interface
-        // var validator = new PaymentRequestValidator();
-        // var result =
-        //     validator.IsCardNumberValid(payment) &&
-        //     validator.IsExpiryValid(payment) &&
-        //     validator.IsAmountValid(payment) &&
-        //     validator.IsCurrencyCodeValid(payment) &&
-        //     validator.ValidateCvv(payment);
-
-        // if (!result)
-        // {
-        //     return new OkObjectResult(PaymentStatus.Rejected);
-        // }
-
+        // validate
         // call bank
         // validate bank response
         // add to payments repo
 
 
-        //   "card_number": "2222405343248877",
-        //   "expiry_date": "04/2025",
-        //   "currency": "GBP",
-        //   "amount": 100,
-        //   "cvv": "123"
+        // add interface
+        var validator = new PaymentRequestValidator();
+        var result =
+            validator.IsCardNumberValid(payment) &&
+            validator.IsExpiryValid(payment) &&
+            validator.IsAmountValid(payment) &&
+            validator.IsCurrencyCodeValid(payment) &&
+            validator.ValidateCvv(payment);
 
-        var bankRequest = new BankRequest();
-        bankRequest.CardNumber = "2222405343248877";
-        bankRequest.ExpiryDate = "04/2025";
-        bankRequest.Currency = "GBP";
-        bankRequest.Amount = 100;
-        bankRequest.Cvv = "123";
-
-
-        using HttpClient bankClient = new HttpClient();
-        bankClient.BaseAddress = new Uri("http://localhost:8080/");
-        var response = await bankClient.PostAsJsonAsync($"/payments", bankRequest);
-
-
-        // todo
-        //      200, auth true
-        //      200, auth false, no code
-        //      503
-
-        Console.WriteLine(response.StatusCode);
-        if (response.IsSuccessStatusCode)
+        if (!result)
         {
-            BankResponse bankResponse = await response.Content.ReadFromJsonAsync<BankResponse>();
-
-            Console.WriteLine(bankResponse.Authorized);
-            Console.WriteLine(bankResponse.AuthorizationCode);
-
-            var ok = new PostPaymentResponse();
-
-            ok.Id = Guid.NewGuid(); // or use the bank one, but could be empty
-            if (bankResponse.Authorized)
-            {
-                ok.Status = PaymentStatus.Authorized;
-            }
-            else
-            {
-                ok.Status = PaymentStatus.Declined;
-            }
-
-            ok.CardNumberLastFour = payment.CardNumber.Substring(payment.CardNumber.Length - 4);
-            ok.ExpiryMonth = payment.ExpiryMonth;
-            ok.ExpiryYear = payment.ExpiryYear;
-            ok.Currency = payment.Currency;
-            ok.Amount = payment.Amount;
-
-
-
-            this.paymentRepo.Add(ok);
+            return new OkObjectResult(PaymentStatus.Rejected);
         }
 
+        PostPaymentResponse paymentResponse = new();
 
+        var bankClient = new BankHttpClient();
 
+        HttpResponseMessage httpResponse = await bankClient.PostBankPayment(payment);
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            BankResponseProcessor processor = new();
+            paymentResponse = await processor.ParseBankResponse(payment, httpResponse);
+            this.paymentRepo.Add(paymentResponse);
 
-        return new OkObjectResult(PaymentStatus.Authorized);
+            return new OkObjectResult(paymentResponse.Status);
+        }
+        else // http 503
+        {
+            return new OkObjectResult(PaymentStatus.Rejected);
+        }
+    }
+}
+
+public class BankResponseProcessor
+{
+    public async Task<PostPaymentResponse> ParseBankResponse(PaymentRequest payment, HttpResponseMessage response)
+    {
+        BankResponse bankResponse = await response.Content.ReadFromJsonAsync<BankResponse>();
+
+        Console.WriteLine(bankResponse.Authorized);
+        Console.WriteLine(bankResponse.AuthorizationCode);
+
+        var ok = new PostPaymentResponse();
+
+        if (bankResponse.Authorized)
+        {
+            ok.Status = PaymentStatus.Authorized;
+        }
+        else
+        {
+            ok.Status = PaymentStatus.Declined;
+        }
+
+        ok.Id = Guid.NewGuid(); // or use the bank one? but could be empty
+        ok.CardNumberLastFour = payment.CardNumber.Substring(payment.CardNumber.Length - 4);
+        ok.ExpiryMonth = payment.ExpiryMonth;
+        ok.ExpiryYear = payment.ExpiryYear;
+        ok.Currency = payment.Currency;
+        ok.Amount = payment.Amount;
+
+        return ok;
+    }
+}
+
+public class BankHttpClient
+{
+    public async Task<HttpResponseMessage> PostBankPayment(PaymentRequest payment)
+    {
+        // "04/2025"
+        string expiry = $"{payment.ExpiryMonth}/{payment.ExpiryYear}";
+
+        var bankRequest = new BankRequest();
+        bankRequest.CardNumber = payment.CardNumber;
+        bankRequest.ExpiryDate = expiry;
+        bankRequest.Currency = payment.Currency;
+        bankRequest.Amount = payment.Amount;
+        bankRequest.Cvv = payment.Cvv;
+
+        // create client using a factory in Program.cs
+        // read from config
+        using HttpClient bankClient = new HttpClient();
+        bankClient.BaseAddress = new Uri("http://localhost:8080/");
+        HttpResponseMessage response = await bankClient.PostAsJsonAsync($"/payments", bankRequest);
+
+        return response;
     }
 }
