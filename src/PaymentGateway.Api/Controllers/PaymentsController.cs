@@ -83,7 +83,13 @@ public class PaymentsController : Controller
         var response = await bankClient.PostAsJsonAsync($"/payments", bankRequest);
 
         Console.WriteLine(response.StatusCode);
-        Console.WriteLine(response.Content.ToString());
+        if (response.IsSuccessStatusCode)
+        {
+            BankResponse bankResponse = await response.Content.ReadFromJsonAsync<BankResponse>();
+
+            Console.WriteLine(bankResponse.Authorized);
+            Console.WriteLine(bankResponse.AuthorizationCode);
+        }
 
 
 
@@ -91,6 +97,3 @@ public class PaymentsController : Controller
         return new OkObjectResult(PaymentStatus.Authorized);
     }
 }
-
-
-
