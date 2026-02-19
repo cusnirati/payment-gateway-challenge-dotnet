@@ -37,60 +37,23 @@ public class PaymentsController : Controller
     [HttpPost]
     public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
     {
-        // validate
+        // add interface
+        var validator = new PaymentRequestValidator();
+        var result =
+            validator.IsCardNumberValid(payment) &&
+            validator.IsExpiryValid(payment) &&
+            validator.IsAmountValid(payment) &&
+            validator.IsCurrencyCodeValid(payment) &&
+            validator.ValidateCvv(payment);
+
+        if (!result)
+        {
+            return new OkObjectResult(PaymentStatus.Rejected);
+        }
+
         // call bank
         // validate bank response
         // add to payments repo
-
-        if (!Regex.IsMatch(payment.CardNumber, @"^\d{14,19}$"))
-        {
-            // invalid card number
-        }
-
-        var result = payment.ExpiryMonth < 1 || payment.ExpiryMonth > 12;
-        if (result)
-        {
-            // invalid month
-        }
-
-        var result22 = payment.ExpiryYear < DateTime.Now.Year;
-        if (result22)
-        {
-            // invalid month
-        }
-
-        var expiry = new DateTime(payment.ExpiryYear, payment.ExpiryMonth, 1);
-        var now = DateTime.Now;
-        var dt = new DateTime(now.Year, now.Month, 1);
-
-        if (expiry < dt)
-        {
-            // invalid month + year
-        }
-
-        if (payment.Currency.Length != 3)
-        {
-            // invalid currency
-            // ?? Ensure your submission validates against no more than 3 currency codes
-        }
-
-        if (payment.Amount < 1)
-        {
-            // invalid amount
-        }
-
-        
-        if (!Regex.IsMatch(payment.Cvv, @"^\d{3,4}$"))
-        {
-            // invalid cvv
-        }
-
-        // all of these are rejected
-
-
-
-
-
 
 
 
