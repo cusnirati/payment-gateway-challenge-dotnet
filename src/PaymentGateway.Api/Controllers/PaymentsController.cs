@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 
+using Microsoft.AspNetCore.Http.HttpResults;
+
 using Microsoft.AspNetCore.Mvc;
+
+using PaymentGateway.Api.Models;
 
 using PaymentGateway.Api.Models.Requests;
 
@@ -29,10 +33,10 @@ public class PaymentsController : Controller
         return new OkObjectResult(payment);
     }
 
-    public async Task<ActionResult<PaymentRequest>> PostPayment([FromBody] PaymentRequest payment)
+    [HttpPost]
+    public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
     {
-        
 
-        return new OkObjectResult(payment);
+        return new OkObjectResult(PaymentStatus.Authorized);
     }
 }
