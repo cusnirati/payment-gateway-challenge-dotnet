@@ -8,22 +8,17 @@ using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services;
 
-public class PaymentsRepository
+public class PostPaymentRepository
 {
-    // public List<PostPaymentResponse> Payments = new();
+    public List<PostPaymentResponse> Payments = new();
 
-    // public void Add(PostPaymentResponse payment)
-    // {
-    //     Payments.Add(payment);
-    // }
-
-    // public PostPaymentResponse Get(Guid id)
-    // {
-    //     return Payments.FirstOrDefault(p => p.Id == id);
-    // }
-
-    public void Post(PaymentRequest request)
+    public void Add(PostPaymentResponse payment)
     {
+        Payments.Add(payment);
+    }
 
+    public PostPaymentResponse Get(Guid id)
+    {
+        return Payments.FirstOrDefault(p => p.Id == id);
     }
 }

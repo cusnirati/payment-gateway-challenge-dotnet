@@ -12,8 +12,7 @@ public class PaymentRequest
     public int ExpiryYear { get; set; }
     public string Currency { get; set; }
 
-    // decimal?
-    public long Amount { get; set; }
+    public long Amount { get; set; } // or decimal ?
     public string Cvv { get; set; }
 }
 

@@ -21,11 +21,11 @@ namespace PaymentGateway.Api.Controllers;
 [ApiController]
 public class PaymentsController : Controller
 {
-    private readonly PaymentsRepository paymentsRepo;
+    private readonly PostPaymentRepository paymentRepo;
 
-    public PaymentsController(PaymentsRepository paymentsRepo)
+    public PaymentsController(PostPaymentRepository paymentRepo)
     {
-        this.paymentsRepo = paymentsRepo;
+        this.paymentRepo = paymentRepo;
     }
 
     // [HttpGet("{id:guid}")]
@@ -82,6 +82,12 @@ public class PaymentsController : Controller
         bankClient.BaseAddress = new Uri("http://localhost:8080/");
         var response = await bankClient.PostAsJsonAsync($"/payments", bankRequest);
 
+
+        // todo
+        //      200, auth true
+        //      200, auth false, no code
+        //      503
+
         Console.WriteLine(response.StatusCode);
         if (response.IsSuccessStatusCode)
         {
@@ -89,6 +95,28 @@ public class PaymentsController : Controller
 
             Console.WriteLine(bankResponse.Authorized);
             Console.WriteLine(bankResponse.AuthorizationCode);
+
+            var ok = new PostPaymentResponse();
+
+            ok.Id = Guid.NewGuid(); // or use the bank one, but could be empty
+            if (bankResponse.Authorized)
+            {
+                ok.Status = PaymentStatus.Authorized;
+            }
+            else
+            {
+                ok.Status = PaymentStatus.Declined;
+            }
+
+            ok.CardNumberLastFour = payment.CardNumber.Substring(payment.CardNumber.Length - 4);
+            ok.ExpiryMonth = payment.ExpiryMonth;
+            ok.ExpiryYear = payment.ExpiryYear;
+            ok.Currency = payment.Currency;
+            ok.Amount = payment.Amount;
+
+
+
+            this.paymentRepo.Add(ok);
         }
 
 
