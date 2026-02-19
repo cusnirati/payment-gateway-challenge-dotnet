@@ -25,13 +25,13 @@ public class PaymentsController : Controller
         this.paymentsRepo = paymentsRepo;
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
-    {
-        var payment = paymentsRepo.Get(id);
+    // [HttpGet("{id:guid}")]
+    // public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
+    // {
+    //     var payment = paymentsRepo.Get(id);
 
-        return new OkObjectResult(payment);
-    }
+    //     return new OkObjectResult(payment);
+    // }
 
     [HttpPost]
     public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
@@ -40,6 +40,10 @@ public class PaymentsController : Controller
         // call bank
         // validate bank response
         // add to payments repo
+
+        
+
+
 
         return new OkObjectResult(PaymentStatus.Authorized);
     }
