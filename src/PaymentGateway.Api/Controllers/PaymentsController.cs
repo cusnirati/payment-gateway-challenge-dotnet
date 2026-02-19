@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -34,9 +35,17 @@ public class PaymentsController : Controller
     //     return new OkObjectResult(payment);
     // }
 
+    [HttpGet("")]
+    public async Task<ActionResult<string>> Get()
+    {
+        return new OkObjectResult("okkkkkkkkk");
+    }
+
     [HttpPost]
     public async Task<ActionResult<PaymentStatus>> PostPayment([FromBody] PaymentRequest payment)
     {
+
+
         // add interface
         var validator = new PaymentRequestValidator();
         var result =
@@ -54,6 +63,10 @@ public class PaymentsController : Controller
         // call bank
         // validate bank response
         // add to payments repo
+
+
+        using HttpClient bankClient = new HttpClient();
+        // var response = await bankClient.GetAsync($"/{currency}");
 
 
 
