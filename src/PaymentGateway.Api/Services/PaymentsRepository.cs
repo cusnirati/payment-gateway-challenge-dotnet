@@ -8,7 +8,13 @@ using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services;
 
-public class PostPaymentRepository
+public interface IPostPaymentRepository
+{
+    void Add(PostPaymentResponse payment);
+    PostPaymentResponse Get(Guid id);
+}
+
+public class PostPaymentRepository : IPostPaymentRepository
 {
     public List<PostPaymentResponse> Payments = new();
 

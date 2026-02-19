@@ -3,8 +3,19 @@ using System.Text.RegularExpressions;
 
 using PaymentGateway.Api.Models.Requests;
 
-// todo add return message what exactly is invalid
-public class PaymentRequestValidator
+namespace PaymentGateway.Api.Services;
+
+
+public interface IPaymentRequestValidator
+{
+    bool IsCardNumberValid(PaymentRequest payment);
+    bool IsExpiryValid(PaymentRequest payment);
+    bool IsAmountValid(PaymentRequest payment);
+    bool IsCurrencyCodeValid(PaymentRequest payment);
+    bool ValidateCvv(PaymentRequest payment);
+}
+
+public class PaymentRequestValidator : IPaymentRequestValidator
 {
     public bool IsCardNumberValid(PaymentRequest payment)
     {
