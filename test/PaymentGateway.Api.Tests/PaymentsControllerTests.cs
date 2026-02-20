@@ -9,15 +9,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Moq;
 
-using NUnit.Framework;
-
 using PaymentGateway.Api.Models.Requests;
 
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
 
-namespace PaymentGateway.Api.Controllers;
+using Xunit;
 
+namespace PaymentGateway.Api.Controllers;
 
 public class PaymentsControllerTests
 {
@@ -25,15 +24,11 @@ public class PaymentsControllerTests
     private Random random = new();
 
     private Mock<IPostPaymentRepository> paymentRepo;
-    // private readonly IPaymentRequestValidator validator;
-    // private readonly IBankHttpClient bankHttpClient;
-    // private readonly IBankResponseProcessor responseProcessor;
-
     private Mock<IPaymentRequestValidator> validator;
+    private Mock<IBankHttpClient> bankHttpClient;
+    private Mock<IBankResponseProcessor> bankResponseProcessor;
 
-
-    [SetUp]
-    public async Task SetUp()
+    public PaymentsControllerTests()
     {
         var payment = new PostPaymentResponse
         {
@@ -46,41 +41,49 @@ public class PaymentsControllerTests
         };
 
         this.paymentRepo = new Mock<IPostPaymentRepository>();
-        this.paymentRepo.Setup(x=>x.Get(It.IsAny<Guid>())).Returns(payment);
-
+        this.paymentRepo.Setup(x => x.Get(It.IsAny<Guid>())).Returns(payment);
 
         this.validator = new Mock<IPaymentRequestValidator>();
-        this.validator.Setup(x=>x.IsCardNumberValid(It.IsAny<PaymentRequest>())).Returns(true);
-        this.validator.Setup(x=>x.IsExpiryValid(It.IsAny<PaymentRequest>())).Returns(true);
-        this.validator.Setup(x=>x.IsAmountValid(It.IsAny<PaymentRequest>())).Returns(true);
-        this.validator.Setup(x=>x.IsCurrencyCodeValid(It.IsAny<PaymentRequest>())).Returns(true);
-        this.validator.Setup(x=>x.ValidateCvv(It.IsAny<PaymentRequest>())).Returns(true);
+        this.validator.Setup(x => x.IsCardNumberValid(It.IsAny<PaymentRequest>())).Returns(true);
+        this.validator.Setup(x => x.IsExpiryValid(It.IsAny<PaymentRequest>())).Returns(true);
+        this.validator.Setup(x => x.IsAmountValid(It.IsAny<PaymentRequest>())).Returns(true);
+        this.validator.Setup(x => x.IsCurrencyCodeValid(It.IsAny<PaymentRequest>())).Returns(true);
+        this.validator.Setup(x => x.ValidateCvv(It.IsAny<PaymentRequest>())).Returns(true);
+
+        this.bankHttpClient = new Mock<IBankHttpClient>();
+        this.bankHttpClient.Setup(x => x.PostBankPayment(It.IsAny<PaymentRequest>())).ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+        this.bankResponseProcessor = new Mock<IBankResponseProcessor>();
+        this.bankResponseProcessor
+            .Setup(x => x.ParseBankResponse(It.IsAny<PaymentRequest>(), It.IsAny<HttpResponseMessage>())).ReturnsAsync(new PostPaymentResponse());
 
 
         var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
         this.controller = webApplicationFactory.WithWebHostBuilder(builder =>
         builder.ConfigureServices(services =>
         {
-            services.AddSingleton(this.validator.Object);
             services.AddSingleton(this.paymentRepo.Object);
+            services.AddSingleton(this.bankHttpClient.Object);
+            services.AddSingleton(this.bankResponseProcessor.Object);
+
+            services.AddSingleton(this.validator.Object);
+
         })).CreateClient();
     }
 
-    [TearDown]
-    public void TearDown()
+    public void Dispose()
     {
         this.controller.Dispose();
     }
 
-    [Test]
+    [Fact]
     public async Task RetrievesAPaymentSuccessfully()
     {
         var response = await this.controller.GetAsync($"/api/Payments/123e4567-e89b-12d3-a456-426614174000");
         var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>();
-        
-        Assert.Equals(HttpStatusCode.OK, response.StatusCode);
-        // Assert.IsNotNull(paymentResponse);
-        // Assert.IsNotNull(paymentResponse);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(paymentResponse);
     }
 
     // [Test]
@@ -89,10 +92,10 @@ public class PaymentsControllerTests
     //     // Arrange
     //     var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
     //     var client = webApplicationFactory.CreateClient();
-        
+
     //     // Act
     //     var response = await client.GetAsync($"/api/Payments/{Guid.NewGuid()}");
-        
+
     //     // Assert
     //     Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     // }
